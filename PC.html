@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《交错残响》抽卡模拟</title>
+    <style>
+        #single-draw, #ten-draws, #two-hundred-draws, .button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            border: 2px solid #fff;
+            border-radius: 25px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #single-draw:hover, #ten-draws:hover, #two-hundred-draws:hover, .button:hover {
+            background-color: #007BFF;
+        }
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .card-container img {
+            max-width: 50px;
+            height: auto;
+        }
+        img {
+            max-width: 50px;
+        }
+        .statistics {
+            margin-top: 20px;
+        }
+        .video-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        #video-player {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #close-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: transparent;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>《交错残响》抽卡模拟</h1>
+    <p>抽卡数量：<span id="draw-count">0</span></p>
+    <p><img src="1.png" alt="一星">一星数量：<span id="one-star-count">0</span><span id="one-star-percentage"></span></p>
+    <p><img src="2.png" alt="二星">二星数量：<span id="two-stars-count">0</span><span id="two-stars-percentage"></span></p>
+    <p><img src="3.png" alt="三星">三星非up数量：<span id="three-stars-count">0</span><span id="three-stars-percentage"></span></p>
+    <p><img src="4.png" alt="三星up">三星up数量：<span id="four-stars-count">0</span><span id="four-stars-percentage"></span></p>
+    <div class="statistics">
+        <button id="single-draw">招募1次</button>
+        <button id="ten-draws">招募10次</button>
+        <button id="two-hundred-draws">招募200次</button>
+        <a href="PC.html" class="button">重置</a>
+    </div>
+    <div class="card-container">
+    </div>
+    <div id="video-popup" class="video-popup">
+        <div class="video-container">
+            <video id="video-player" controls>
+                <source src="1.mp4" type="video/mp4">
+                您的设备不支持视频播放
+            </video>
+            <button id="close-button">跳过</button>
+        </div>
+    </div>
+    <script>
+        let drawCount = 0;
+        let starsDrawn = {
+            oneStar: 0,
+            twoStars: 0,
+            threeStars: 0,
+            fourStars: 0
+        };
+        let drawnCards = [];
+        let drawFunction;
+
+        function updateStatistics() {
+            const totalDrawn = drawCount;
+            const oneStarCount = drawnCards.filter(card => card === '1.png').length;
+            const twoStarsCount = drawnCards.filter(card => card === '2.png').length;
+            const threeStarsCount = drawnCards.filter(card => card === '3.png').length;
+            const fourStarsCount = drawnCards.filter(card => card === '4.png').length;
+
+            const oneStarPercentage = ((oneStarCount / totalDrawn) * 100).toFixed(2);
+            const twoStarsPercentage = ((twoStarsCount / totalDrawn) * 100).toFixed(2);
+            const threeStarsPercentage = ((threeStarsCount / totalDrawn) * 100).toFixed(2);
+            const fourStarsPercentage = ((fourStarsCount / totalDrawn) * 100).toFixed(2);
+
+            document.getElementById('one-star-count').textContent = oneStarCount;
+            document.getElementById('one-star-percentage').textContent = `(${oneStarPercentage}%)`;
+            document.getElementById('two-stars-count').textContent = twoStarsCount;
+            document.getElementById('two-stars-percentage').textContent = `(${twoStarsPercentage}%)`;
+            document.getElementById('three-stars-count').textContent = threeStarsCount;
+            document.getElementById('three-stars-percentage').textContent = `(${threeStarsPercentage}%)`;
+            document.getElementById('four-stars-count').textContent = fourStarsCount;
+            document.getElementById('four-stars-percentage').textContent = `(${fourStarsPercentage}%)`;
+        }
+
+        function drawCard() {
+            const randomNumber = Math.random() * 100;
+            let cardImage = '';
+
+            if (drawCount >= 29) {
+                const last30Draws = drawnCards.slice(-29);
+                const last30Stars = last30Draws.filter(card => card === '3.png' || card === '4.png');
+                if (last30Stars.length === 0) {
+                    if (randomNumber < 60) {
+                        cardImage = '3.png';
+                        starsDrawn.threeStars++;
+                    } else {
+                        cardImage = '4.png';
+                        starsDrawn.fourStars++;
+                    }
+                }
+            }
+
+            if (drawCount >= 9) {
+                const last10Draws = drawnCards.slice(-9);
+                const last10Stars = last10Draws.filter(card => card === '2.png' || card === '3.png' || card === '4.png');
+                if (last10Stars.length === 0) {
+                    if (randomNumber < 95) {
+                        cardImage = '2.png';
+                        starsDrawn.twoStars++;
+                    } else if (randomNumber < 98) {
+                        cardImage = '3.png';
+                        starsDrawn.threeStars++;
+                    } else {
+                        cardImage = '4.png';
+                        starsDrawn.fourStars++;
+                    }
+                }
+            }
+
+            if (cardImage === '') {
+                if (randomNumber < 72.6) {
+                    cardImage = '1.png';
+                    starsDrawn.oneStar++;
+                } else if (randomNumber < 95) {
+                    cardImage = '2.png';
+                    starsDrawn.twoStars++;
+                } else if (randomNumber < 98) {
+                    cardImage = '3.png';
+                    starsDrawn.threeStars++;
+                } else {
+                    cardImage = '4.png';
+                    starsDrawn.fourStars++;
+                }
+            }
+
+            drawnCards.push(cardImage);
+
+            const cardContainer = document.querySelector('.card-container');
+            const cardImg = document.createElement('img');
+            cardImg.src = cardImage;
+            cardContainer.appendChild(cardImg);
+
+            drawCount++;
+            document.getElementById('draw-count').textContent = drawCount;
+
+            updateStatistics();
+        }
+
+        function openVideoPopup(drawFunctionToExecute) {
+            const videoPopup = document.getElementById('video-popup');
+            videoPopup.style.display = 'block';
+
+            const videoPlayer = document.getElementById('video-player');
+            videoPlayer.play();
+
+            videoPlayer.onended = function() {
+                videoPopup.style.display = 'none';
+                videoPlayer.currentTime = 0;
+                videoPlayer.pause();
+                drawFunctionToExecute();
+            };
+
+            drawFunction = drawFunctionToExecute;
+        }
+
+        function closeVideoPopup() {
+            const videoPopup = document.getElementById('video-popup');
+            videoPopup.style.display = 'none';
+
+            const videoPlayer = document.getElementById('video-player');
+            videoPlayer.currentTime = 0;
+            videoPlayer.pause();
+
+            drawFunction();
+        }
+
+        document.getElementById('single-draw').addEventListener('click', function() {
+            openVideoPopup(drawCard);
+        });
+        document.getElementById('ten-draws').addEventListener('click', function() {
+            openVideoPopup(() => {
+                for (let i = 0; i < 10; i++) {
+                    drawCard();
+                }
+            });
+        });
+        document.getElementById('two-hundred-draws').addEventListener('click', function() {
+            openVideoPopup(() => {
+                for (let i = 0; i < 200; i++) {
+                    drawCard();
+                }
+            });
+        });
+        document.getElementById('close-button').addEventListener('click', closeVideoPopup);
+    </script>
+</body>
+</html>
